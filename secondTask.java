@@ -1,12 +1,34 @@
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Arrays;
+import java.io.*;
+import java.util.*;
 
-public class CombinedProgram {
+public class CalculatorApp {
+
+    public static void main(String[] args) {
+        // Створюємо колекцію для зберігання результатів обчислень
+        List<ParametersAndResults> dataList = new ArrayList<>();
+
+        // Додаємо результати обчислень до колекції
+        ParametersAndResults data1 = new ParametersAndResults(new double[]{1.0, 2.0, 3.0}, new double[]{4.0, 5.0, 6.0});
+        dataList.add(data1);
+
+        ParametersAndResults data2 = new ParametersAndResults(new double[]{7.0, 8.0, 9.0}, new double[]{10.0, 11.0, 12.0});
+        dataList.add(data2);
+
+        // Зберігаємо та відновлюємо стан об'єкта з файлу
+        saveAndRestoreObjectState(dataList);
+
+        // Проводимо тестування коректності результатів та серіалізації/десеріалізації
+        testCalculationAndSerialization();
+
+        // Підрахунок кількості входжень кожної цифри у десятковому поданні цілого числа
+        int number = 12345;
+        int[] digitCounts = countDigits(number);
+
+        System.out.println("Counts of digits in " + number + ":");
+        for (int i = 0; i < digitCounts.length; i++) {
+            System.out.println("Digit " + i + ": " + digitCounts[i]);
+        }
+    }
 
     // Клас для зберігання параметрів та результатів обчислень
     public static class ParametersAndResults implements Serializable {
@@ -22,28 +44,18 @@ public class CombinedProgram {
             return parameters;
         }
 
-        public void setParameters(double[] parameters) {
-            this.parameters = parameters;
-        }
-
         public double[] getResults() {
             return results;
-        }
-
-        public void setResults(double[] results) {
-            this.results = results;
         }
     }
 
     // Функція для серіалізації та відновлення стану об'єкта з файлу
-    private static void trySaveAndRestoreObjectState() {
+    private static void saveAndRestoreObjectState(List<ParametersAndResults> dataList) {
         try {
-            // Створення об'єкта для зберігання
-            ParametersAndResults dataToSave = new ParametersAndResults(new double[]{1.0, 2.0, 3.0}, new double[]{4.0, 5.0, 6.0});
-            // Збереження об'єкта в файл
+            // Зберігання об'єкта в файл
             FileOutputStream fileOut = new FileOutputStream("data.ser");
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
-            objectOut.writeObject(dataToSave);
+            objectOut.writeObject(dataList);
             objectOut.close();
             fileOut.close();
             System.out.println("Object state saved successfully.");
@@ -51,10 +63,16 @@ public class CombinedProgram {
             // Відновлення об'єкта з файлу
             FileInputStream fileIn = new FileInputStream("data.ser");
             ObjectInputStream objectIn = new ObjectInputStream(fileIn);
-            ParametersAndResults restoredData = (ParametersAndResults) objectIn.readObject();
+            List<ParametersAndResults> restoredData = (List<ParametersAndResults>) objectIn.readObject();
             objectIn.close();
             fileIn.close();
             System.out.println("Object state restored successfully.");
+
+            // Вивід відновлених даних
+            for (ParametersAndResults data : restoredData) {
+                System.out.println("Parameters: " + Arrays.toString(data.getParameters()));
+                System.out.println("Results: " + Arrays.toString(data.getResults()));
+            }
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -80,22 +98,5 @@ public class CombinedProgram {
         }
 
         return digitCounts;
-    }
-
-    public static void main(String[] args) {
-        // Спроба збереження та відновлення стану об'єкта
-        trySaveAndRestoreObjectState();
-
-        // Тестування коректності результатів та серіалізації/десеріалізації
-        testCalculationAndSerialization();
-
-        // Підрахунок кількості входжень кожної цифри у десятковому поданні цілого числа
-        int number = 12345;
-        int[] digitCounts = countDigits(number);
-
-        System.out.println("Counts of digits in " + number + ":");
-        for (int i = 0; i < digitCounts.length; i++) {
-            System.out.println("Digit " + i + ": " + digitCounts[i]);
-        }
     }
 }
