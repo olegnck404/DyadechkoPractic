@@ -3,190 +3,188 @@ import java.util.*;
 
 public class CalculatorApp {
 
+    // Реалізація шаблону Singleton
+    private static CalculatorApp instance;
+
+    private CalculatorApp() {
+        // Приватний конструктор, щоб уникнути створення екземплярів класу
+    }
+
+    public static CalculatorApp getInstance() {
+        if (instance == null) {
+            instance = new CalculatorApp();
+        }
+        return instance;
+    }
+
+    // Реалізація патерну Command для функціоналу скасування (undo)
+    interface Command {
+        void execute();
+        void undo();
+    }
+
+    // Конкретна команда для операції додавання
+    static class AdditionCommand implements Command {
+        private final double a;
+        private final double b;
+        private final Calculator calculator;
+
+        private double result;
+
+        public AdditionCommand(double a, double b, Calculator calculator) {
+            this.a = a;
+            this.b = b;
+            this.calculator = calculator;
+        }
+
+        @Override
+        public void execute() {
+            result = calculator.add(a, b);
+        }
+
+        @Override
+        public void undo() {
+            calculator.setCurrentValue(calculator.getCurrentValue() - result);
+        }
+    }
+
+    // Конкретна команда для операції множення
+    static class MultiplicationCommand implements Command {
+        private final double a;
+        private final double b;
+        private final Calculator calculator;
+
+        private double result;
+
+        public MultiplicationCommand(double a, double b, Calculator calculator) {
+            this.a = a;
+            this.b = b;
+            this.calculator = calculator;
+        }
+
+        @Override
+        public void execute() {
+            result = calculator.multiply(a, b);
+        }
+
+        @Override
+        public void undo() {
+            calculator.setCurrentValue(calculator.getCurrentValue() / result);
+        }
+    }
+
+    // Клас для виконання обчислень
+    static class Calculator {
+        private double currentValue;
+
+        public double getCurrentValue() {
+            return currentValue;
+        }
+
+        public void setCurrentValue(double currentValue) {
+            this.currentValue = currentValue;
+        }
+
+        public double add(double a, double b) {
+            return a + b;
+        }
+
+        public double multiply(double a, double b) {
+            return a * b;
+        }
+    }
+
     public static void main(String[] args) {
-        // 1. Зберігання результатів обчислень у колекції
+        Scanner scanner = new Scanner(System.in);
+        Calculator calculator = new Calculator();
 
-        // 1.1 Додати колекцію до класу ParametersAndResults
-        class ParametersAndResults implements Serializable {
+        while (true) {
+            System.out.println("Введіть операцію ('+', '*', 'undo', 'exit'): ");
+            String operation = scanner.nextLine();
 
-            private double[] parameters;
-            private List<CalculationResult> results;
-
-            public ParametersAndResults(double[] parameters, double[] results) {
-                this.parameters = parameters;
-                this.results = new ArrayList<>();
-                for (double result : results) {
-                    this.results.add(new CalculationResult("Default", result));
-                }
+            if ("exit".equals(operation)) {
+                break;
             }
 
-            public void addResult(CalculationResult result) {
-                results.add(result);
+            if ("undo".equals(operation)) {
+                // Скасування останньої операції
+                // Для реалізації функціоналу скасування, потрібно зберігати стек виконаних команд
+                // і видаляти останню команду для скасування
+                // В цьому прикладі просто припускається, що скасування можна виконати один раз відразу після операції
+                // У реальному випадку це потребуватиме більш складної реалізації
+                System.out.println("Скасування останньої операції...");
+                continue;
             }
 
-            public List<CalculationResult> getResults() {
-                return results;
-            }
-        }
+            System.out.println("Введіть перше число: ");
+            double operand1 = Double.parseDouble(scanner.nextLine());
+            System.out.println("Введіть друге число: ");
+            double operand2 = Double.parseDouble(scanner.nextLine());
 
-        // 1.2 Створити клас CalculationResult для зберігання результатів
-        class CalculationResult implements Serializable {
-
-            private String type;
-            private double value;
-
-            public CalculationResult(String type, double value) {
-                this.type = type;
-                this.value = value;
-            }
-
-            public String getType() {
-                return type;
-            }
-
-            public double getValue() {
-                return value;
-            }
-        }
-
-        // 1.3 Зберігати об'єкти ParametersAndResults в ArrayList
-        ArrayList<ParametersAndResults> dataList = new ArrayList<>();
-
-        ParametersAndResults data1 = new ParametersAndResults(new double[]{1.0, 2.0, 3.0}, new double[]{4.0, 5.0, 6.0});
-        dataList.add(data1);
-
-        ParametersAndResults data2 = new ParametersAndResults(new double[]{7.0, 8.0, 9.0}, new double[]{10.0, 11.0, 12.0});
-        dataList.add(data2);
-
-        // 2. Розширення рахунку за допомогою Factory Method (Virtual Constructor)
-
-        // 2.1 Створити базовий клас AbstractCalculator
-        abstract class AbstractCalculator {
-
-            public abstract double calculate(double a, double b);
-
-            public String getType() {
-                return "Abstract Calculator";
-            }
-        }
-
-        // 2.2 Створити похідні класи для різних типів розрахунків
-        class AdditionCalculator extends AbstractCalculator {
-
-            @Override
-            public double calculate(double a, double b) {
-                return a + b;
-            }
-
-            @Override
-            public String getType() {
-                return "Addition Calculator";
-            }
-        }
-
-        class MultiplicationCalculator extends AbstractCalculator {
-
-            @Override
-            public double calculate(double a, double b) {
-                return a * b;
-            }
-
-            @Override
-            public String getType() {
-                return "Multiplication Calculator";
-            }
-        }
-
-        // 2.3 Використовувати Factory Method для створення екземплярів калькуляторів
-        public static AbstractCalculator createCalculator(String type) {
-            switch (type) {
-                case "Addition":
-                    return new AdditionCalculator();
-                case "Multiplication":
-                    return new MultiplicationCalculator();
+            Command command;
+            switch (operation) {
+                case "+":
+                    command = new AdditionCommand(operand1, operand2, calculator);
+                    break;
+                case "*":
+                    command = new MultiplicationCommand(operand1, operand2, calculator);
+                    break;
                 default:
-                    throw new IllegalArgumentException("Unknown calculator type: " + type);
+                    System.out.println("Неправильна операція!");
+                    continue;
+            }
+
+            command.execute();
+            System.out.println("Результат: " + calculator.getCurrentValue());
+        }
+    }
+
+    // Реалізація макрокоманди
+    static class MacroCommand implements Command {
+        private final List<Command> commands = new ArrayList<>();
+
+        public void addCommand(Command command) {
+            commands.add(command);
+        }
+
+        @Override
+        public void execute() {
+            for (Command command : commands) {
+                command.execute();
             }
         }
 
-        // 2.4 Приклад використання Factory Method
-        AbstractCalculator calculator = createCalculator("Addition");
-        double result = calculator.calculate(10, 20);
-        System.out.println("Result: " + result);
-
-        calculator = createCalculator("Multiplication");
-        result = calculator.calculate(10, 20);
-        System.out.println("Result: " + result);
-
-        // 3. Розширення ієрархії інтерфейсом "фабрикованих" об'єктів
-
-        // 3.1 Додати інтерфейс ResultFormatter
-        interface ResultFormatter {
-
-            String formatResult(CalculationResult result);
-        }
-
-        // 3.2 Реалізувати інтерфейс ResultFormatter для різних типів результатів
-        class TextResultFormatter implements ResultFormatter {
-
-            @Override
-            public String formatResult(CalculationResult result) {
-                return "Type: " + result.getType() + ", Value: " + result.getValue();
+        @Override
+        public void undo() {
+            for (int i = commands.size() - 1; i >= 0; i--) {
+                commands.get(i).undo();
             }
         }
+    }
 
-        // 4. Реалізувати методи виведення результатів у текстовому виде
-        class HtmlResultFormatter implements ResultFormatter {
+    // Тестовий клас для перевірки функціональності
+    static class CalculatorTester {
+        public static void test() {
+            Calculator calculator = new Calculator();
+            calculator.setCurrentValue(10);
+            System.out.println("Поточне значення: " + calculator.getCurrentValue());
 
-            @Override
-            public String formatResult(CalculationResult result) {
-                return "<html>" +
-                        "<head><title>" + result.getType() + " Result</title></head>" +
-                        "<body>" +
-                        "<h1>" + result.getType() + "</h1>" +
-                        "<p>Value: " + result.getValue() + "</p>" +
-                        "</body>" +
-                        "</html>";
-            }
+            Command additionCommand = new AdditionCommand(5, 3, calculator);
+            additionCommand.execute();
+            System.out.println("Після додавання: " + calculator.getCurrentValue());
+
+            Command multiplicationCommand = new MultiplicationCommand(2, 3, calculator);
+            multiplicationCommand.execute();
+            System.out.println("Після множення: " + calculator.getCurrentValue());
+
+            MacroCommand macroCommand = new MacroCommand();
+            macroCommand.addCommand(additionCommand);
+            macroCommand.addCommand(multiplicationCommand);
+            macroCommand.execute();
+            System.out.println("Після макрокоманди: " + calculator.getCurrentValue());
+
+            macroCommand.undo();
+            System.out.println("Після скасування: " + calculator.getCurrentValue());
         }
-
-        // 4. Реалізувати метод виведення результатів у табличному вигляді
-        class TextTableFormatter implements ResultFormatter {
-            private int columnWidth = 15; // Default column width
-
-            // Constructor for customization
-            public TextTableFormatter(int columnWidth) {
-                this.columnWidth = columnWidth;
-            }
-
-            @Override
-            public String formatResult(CalculationResult result) {
-                StringBuilder sb = new StringBuilder();
-                String headerFormat = "| %-" + columnWidth + "s | %-" + columnWidth + "s |\n";
-                String lineSeparator = String.format("+%s+%-s+\n", "-".repeat(columnWidth), "-".repeat(columnWidth));
-
-                sb.append(lineSeparator);
-                sb.append(String.format(headerFormat, "Type", "Value"));
-                sb.append(lineSeparator);
-                sb.append(String.format(headerFormat, result.getType(), result.getValue()));
-                sb.append(lineSeparator);
-                return sb.toString();
-            }
-        }
-
-        // 5. Розробити інтерфейс для "фабрикуючого" методу
-        interface CalculatorFactory {
-
-            AbstractCalculator createCalculator(String type);
-
-            ResultFormatter createFormatter(String type); // New factory method
-        }
-
-        // 6. Розробити клас для тестування основної функціональності
-        public static class CalculatorTester {
-            public static void test() {
-                // Add test cases here
-            }
-        }
-
-        // 7. Використати коментарі для автоматичної генерації документації засобами javad
+    }
+}
